@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hajar Imóveis — Teste do atendimento</title>
+  <meta name="description" content="Hajar Imóveis: página de teste do assistente virtual.">
+
+  <!--
+    Versão simplificada para teste com usuários: uma tela só, sem scroll,
+    com o chat já aberto no canto inferior direito do container.
+    A réplica completa do site está em index-completo.html.
+  -->
+  <style>
+    :root {
+      --red: #E1332B;
+      --red-dark: #C0271F;
+      --navy-dark: #102A38;
+      --ink: #22303A;
+
+      --header-h: 58px;
+      --container: 900px;
+      --pad: 20px;      /* respiro lateral do container */
+      --gap: 32px;      /* distância do chat até o rodapé da tela */
+      --chat-w: 380px;
+      --chat-h: min(640px, calc(100vh - var(--header-h) - 2 * var(--gap)));
+      /* borda direita interna do container de 900px */
+      --chat-right: max(16px, calc((100vw - var(--container)) / 2 + var(--pad)));
+    }
+    @supports (height: 100dvh) {
+      :root { --chat-h: min(640px, calc(100dvh - var(--header-h) - 2 * var(--gap))); }
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      overflow: hidden;
+      display: flex; flex-direction: column;
+      background: var(--navy-dark);
+      color: #fff;
+      font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, p { margin: 0; }
+    ul { margin: 0; padding: 0; list-style: none; }
+
+    .wrap { width: 100%; max-width: var(--container); margin: 0 auto; padding: 0 var(--pad); }
+
+    /* ================= Topo ================= */
+    .topbar { flex-shrink: 0; height: var(--header-h); background: var(--red); position: relative; z-index: 2; }
+    .topbar-inner { height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+
+    .logo { display: flex; align-items: center; gap: 9px; color: #fff; text-decoration: none; }
+    .logo svg { width: 26px; height: 26px; flex-shrink: 0; }
+    .logo-txt { line-height: 1; }
+    .logo-txt strong { display: block; font-size: 1.32rem; font-weight: 700; letter-spacing: -0.01em; }
+    .logo-txt span { display: block; font-size: .58rem; letter-spacing: .34em; opacity: .95; margin-top: 2px; }
+
+    .badge {
+      font-size: .7rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+      padding: 5px 11px; border-radius: 999px; background: rgba(255,255,255,.18);
+    }
+
+    /* ================= Palco ================= */
+    .stage { flex: 1; position: relative; overflow: hidden; }
+    .stage::before {
+      content: ""; position: absolute; inset: -24px;
+      background: url("./hero.jpg") center / cover no-repeat;
+      filter: blur(14px);
+      opacity: .28;
+    }
+    .stage::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(90deg, rgba(16,42,56,.92) 0%, rgba(16,42,56,.55) 55%, rgba(16,42,56,.35) 100%);
+    }
+
+    .stage .wrap {
+      position: relative; z-index: 1; height: 100%;
+      display: flex; align-items: center;
+    }
+
+    /* Texto à esquerda; o chat ocupa a coluna da direita */
+    .intro { max-width: calc(var(--container) - 2 * var(--pad) - var(--chat-w) - 48px); }
+    .intro h1 { font-size: 2rem; line-height: 1.18; font-weight: 700; letter-spacing: -0.01em; }
+    .intro .rule { width: 74px; height: 4px; background: var(--red); border-radius: 2px; margin: 16px 0 18px; }
+    .intro p { color: #C9D6DE; font-size: .95rem; }
+
+    .examples { margin-top: 26px; }
+    .examples-label { font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #8FA5B2; margin-bottom: 10px; }
+    .examples li + li { margin-top: 8px; }
+    .example {
+      width: 100%; text-align: left; cursor: pointer;
+      font-family: inherit; font-size: .88rem; color: #fff;
+      background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.16);
+      border-radius: 8px; padding: 10px 14px;
+      transition: background .15s ease, border-color .15s ease;
+    }
+    .example:hover { background: rgba(225,51,43,.22); border-color: var(--red); }
+
+    .arrow { display: inline-block; color: var(--red); font-weight: 700; }
+
+    /* ================= Widget de chat =================
+       O chatbot.iife.js posiciona tudo com classes Tailwind "!important".
+       Seletores com o #id do widget + !important vencem essas regras. */
+
+    /* Painel: preso no canto inferior direito do container de 900px */
+    #n8n-chatbot-widget-root [class*="cb-h-[600px]"] {
+      top: auto !important;
+      left: auto !important;
+      right: var(--chat-right) !important;
+      bottom: var(--gap) !important;
+      width: var(--chat-w) !important;
+      height: var(--chat-h) !important;
+      max-width: calc(100vw - 32px) !important;
+      max-height: none !important;
+      box-shadow: 0 30px 60px -20px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.08) !important;
+    }
+
+    /* O reset do Tailwind faz o textarea herdar a cor do body (branca aqui).
+       O auto-resize do widget também ignora a borda de 1px e sobra um
+       scroll de 2px, então a barra de rolagem fica oculta. */
+    #n8n-chatbot-widget-root { color: var(--ink); }
+    #n8n-chatbot-widget-root textarea { color: var(--ink) !important; scrollbar-width: none; }
+    #n8n-chatbot-widget-root textarea::-webkit-scrollbar { display: none; }
+
+    /* Chat sempre aberto: some o botão flutuante e o "X" do cabeçalho */
+    #n8n-chatbot-widget-root button[aria-label="Abrir chat"],
+    #n8n-chatbot-widget-root button[aria-label="Fechar chat"] { display: none !important; }
+
+    /* ================= Responsivo ================= */
+    @media (max-width: 860px) {
+      .intro { display: none; }
+      #n8n-chatbot-widget-root [class*="cb-h-[600px]"] {
+        left: 12px !important;
+        right: 12px !important;
+        bottom: 12px !important;
+        width: auto !important;
+        max-width: none !important;
+        height: calc(100% - var(--header-h) - 24px) !important;
+      }
+    }
+    @media (max-width: 420px) { .badge { display: none; } }
+  </style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <span class="logo">
+        <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 17 16 5l13 12"/>
+          <path d="M16 5v24"/>
+        </svg>
+        <span class="logo-txt">
+          <strong>hajar</strong>
+          <span>imóveis</span>
+        </span>
+      </span>
+      <span class="badge">Teste do atendimento</span>
+    </div>
+  </header>
+
+  <main class="stage">
+    <div class="wrap">
+      <div class="intro">
+        <h1>Converse com o assistente da Hajar Imóveis</h1>
+        <div class="rule"></div>
+        <p>Diga o que você procura (casa, chácara ou terreno), o bairro e quanto quer pagar. Também dá para tirar dúvidas sobre qualquer imóvel do site. O chat já está aberto aqui ao lado <span class="arrow">→</span></p>
+
+        <div class="examples">
+          <p class="examples-label">Não sabe por onde começar? Clique em um exemplo</p>
+          <ul>
+            <li><button class="example" type="button">Tem casa no Jardim Itália até 300 mil?</button></li>
+            <li><button class="example" type="button">Quero uma chácara perto de Palmeira</button></li>
+            <li><button class="example" type="button">Quais terrenos vocês têm à venda?</button></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ============================================================
+       WIDGET DE CHAT
+       ============================================================ -->
+  <script src="./chatbot.iife.js"></script>
+  <script>
+    // Webhook de produção do n8n (nó "Webhook" do fluxo.json).
+    // Para testar com o workflow aberto no editor, troque /webhook/ por /webhook-test/.
+    var WEBHOOK_URL = 'https://n8n.ecwd.cloud/webhook/57ddf665-20de-483c-bd7c-258890364422';
+
+    ChatBot.init({
+      webhookUrl: WEBHOOK_URL,
+      title: 'Hajar Imóveis',
+      welcomeMessage: 'Olá! Sou o assistente da Hajar Imóveis. Me diga o que você procura — casa, chácara ou terreno — e em qual bairro. Também respondo sobre qualquer imóvel do site.',
+      placeholder: 'Ex.: casa no Jardim Itália até 300 mil...',
+      primaryColor: '#E1332B',
+      position: 'bottom-right',
+      zIndex: 9999
+    });
+
+    // ChatBot.open() não funciona neste build (dispara um evento que ninguém
+    // escuta). Então abrimos clicando no botão flutuante, que fica oculto via
+    // CSS. O observer também reabre o chat caso ele seja fechado.
+    var widgetRoot = document.getElementById('n8n-chatbot-widget-root');
+
+    function garantirAberto() {
+      var abrir = widgetRoot && widgetRoot.querySelector('button[aria-label="Abrir chat"]');
+      if (abrir) abrir.click();
+    }
+
+    if (widgetRoot) {
+      new MutationObserver(garantirAberto).observe(widgetRoot, { childList: true, subtree: true });
+      garantirAberto();
+    }
+
+    // Exemplos: preenchem o campo do chat para o usuário só apertar Enter.
+    // O textarea é controlado pelo React, então o valor precisa passar pelo
+    // setter nativo + evento "input" para o estado interno ser atualizado.
+    var setValor = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
+
+    Array.prototype.forEach.call(document.querySelectorAll('.example'), function (btn) {
+      btn.addEventListener('click', function () {
+        var campo = widgetRoot && widgetRoot.querySelector('textarea');
+        if (!campo || campo.disabled) return;
+        setValor.call(campo, btn.textContent);
+        campo.dispatchEvent(new Event('input', { bubbles: true }));
+        campo.focus();
+      });
+    });
+  </script>
+</body>
+</html>
